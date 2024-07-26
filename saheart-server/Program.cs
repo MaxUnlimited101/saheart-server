@@ -7,30 +7,39 @@ namespace saheart_server
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            // Add CORS services
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", builder =>
+                {
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
+                });
+            });
+
             var app = builder.Build();
+
+            app.UseCors("AllowAll");
 
             app.MapGet("/", async (HttpContext context) => {
                 context.Response.ContentType = "text/html";
                 await context.Response.SendFileAsync("wwwroot/index.html");
-            });
+            });            
 
-            string[] zodiacSigns = ["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"];
+            HoroscopeGenerator horoscopeGenerator = new();
 
-            foreach (string sign in zodiacSigns)
+            foreach (string sign in horoscopeGenerator.zodiacSigns)
             {
-                app.MapGet($"/{sign}", async (HttpContext context) => {
-                    HoroscopeGenerator horoscopeGenerator = new HoroscopeGenerator();
+                app.MapGet($"/{sign}", (HttpContext context) => {
+                    context.Response.ContentType = "application/json";
                     HoroscopeResponse response = horoscopeGenerator.Generate($"{sign}");
                     return Results.Ok(response);
                 });
             }
 
             app.Run();
-        }
-
-        public static HoroscopeResponse GenerateGoroscopeForZodiacSign(HoroscopeRequest request)
-        {
-            return new HoroscopeResponse();
         }
     }
 }
