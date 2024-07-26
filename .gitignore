@@ -5,7 +5,8 @@
 
 # project specific files
 res/
-
+horoscope_text_full_ENG.txt
+horoscopeStateMap.json
 
 # User-specific files
 *.rsuser
