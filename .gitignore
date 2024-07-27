@@ -7,11 +7,8 @@
 res/
 horoscope_text_full_ENG.txt
 horoscopeStateMap.json
-wwwroot/images/*.jpg
-wwwroot/images/*.jpeg
-wwwroot/images/*.png
-wwwroot/images/*.gif
-wwwroot/images/*.bmp
+wwwroot/images/*.*
+!wwwroot/images/*.txt
 
 # User-specific files
 *.rsuser
