@@ -21,12 +21,23 @@ namespace saheart_server
 
             var app = builder.Build();
 
+            app.UseStaticFiles();
+
             app.UseCors("AllowAll");
 
-            app.MapGet("/", async (HttpContext context) => {
+            app.MapGet("/", async (HttpContext context) =>
+            {
                 context.Response.ContentType = "text/html";
                 await context.Response.SendFileAsync("wwwroot/index.html");
-            });            
+            });
+
+            //foreach (string img in Directory.EnumerateFiles("wwwroot/img"))
+            //{
+            //    app.MapGet(img, async (HttpContext context) => {
+            //        context.Response.ContentType = "img/jpeg";
+            //        await context.Response.SendFileAsync($"{img}");
+            //    });
+            //}
 
             HoroscopeGenerator horoscopeGenerator = new();
 

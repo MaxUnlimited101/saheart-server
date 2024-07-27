@@ -8,6 +8,7 @@ namespace saheart_server
     {
         private static readonly string pathToStateFile = "./res/horoscopeStateMap.json";
         private static readonly string pathToHoroscopes = "./res/horoscope_text_full_ENG.txt";
+        private string pathToImageForToday;
         private List<string> horoscopes;
         private Dictionary<string, string> horoscopeStateMap;
         private Random random;
@@ -18,6 +19,13 @@ namespace saheart_server
             random = new();
             horoscopes = [];
             horoscopeStateMap = [];
+            pathToImageForToday = "";
+
+            List<string> allImages = Directory.EnumerateFiles("wwwroot/images").ToList();
+            string rawPath = allImages[random.Next(0, allImages.Count)];
+            rawPath = rawPath.Substring(rawPath.IndexOf('/'));
+            pathToImageForToday = rawPath.Replace('\\', '/');
+
             if (!File.Exists(pathToHoroscopes))
             {
                 throw new FileNotFoundException("Horoscope file not found!");
@@ -71,6 +79,7 @@ namespace saheart_server
 
         private void InitStateDict()
         {
+            horoscopeStateMap = [];
             foreach (string sign in zodiacSigns)
             {
                 horoscopeStateMap[sign] = horoscopes[random.Next(0, horoscopes.Count)];
@@ -87,6 +96,7 @@ namespace saheart_server
             HoroscopeResponse response = new();
 
             response.Text = horoscopeStateMap[zodiacSign];
+            response.PathToImage = pathToImageForToday;
             return response;
         }
     }

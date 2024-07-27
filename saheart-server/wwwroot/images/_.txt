@@ -1,0 +1,1 @@
+This folder should contain pictures for the horoscope app. The names of the photos do not matter (extension neither (not checked))
