@@ -31,14 +31,6 @@ namespace saheart_server
                 await context.Response.SendFileAsync("wwwroot/index.html");
             });
 
-            //foreach (string img in Directory.EnumerateFiles("wwwroot/img"))
-            //{
-            //    app.MapGet(img, async (HttpContext context) => {
-            //        context.Response.ContentType = "img/jpeg";
-            //        await context.Response.SendFileAsync($"{img}");
-            //    });
-            //}
-
             HoroscopeGenerator horoscopeGenerator = new();
 
             foreach (string sign in horoscopeGenerator.zodiacSigns)
