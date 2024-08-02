@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  web:
+    image: saheart-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - saheart-server-volume:/app/data
+
+volumes:
+  saheart-server-volume:

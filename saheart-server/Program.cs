@@ -33,11 +33,23 @@ namespace saheart_server
 
             HoroscopeGenerator horoscopeGenerator = new();
 
-            foreach (string sign in horoscopeGenerator.zodiacSigns)
+            foreach (string sign in HoroscopeGenerator.zodiacSigns)
             {
                 app.MapGet($"/{sign}", (HttpContext context) => {
+
+                    var date = context.Request.Query["date"];
+                    DateTime reqestDate;
+                    try
+                    {
+                        reqestDate = DateTime.Parse(date);
+                    }
+                    catch (Exception ex)
+                    {
+                        return Results.BadRequest("Date parameter (in ISO string, like YYYY-MM-DD) is incorrect!");
+                    }
+
                     context.Response.ContentType = "application/json";
-                    HoroscopeResponse response = horoscopeGenerator.Generate($"{sign}");
+                    HoroscopeResponse response = horoscopeGenerator.Generate($"{sign}", reqestDate);
                     return Results.Ok(response);
                 });
             }

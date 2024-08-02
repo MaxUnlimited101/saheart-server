@@ -6,25 +6,35 @@ namespace saheart_server
 {
     public class HoroscopeGenerator
     {
-        private static readonly string pathToStateFile = "./res/horoscopeStateMap.json";
+        private static readonly string volumePath = "/app/data"; // Path where the volume is mounted
+        private static readonly string pathToStateFile = "/app/data/horoscopeStateMap.json";
         private static readonly string pathToHoroscopes = "./res/horoscope_text_full_ENG.txt";
-        private string pathToImageForToday;
+        public static readonly string[] zodiacSigns = ["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"];
+
+        private Dictionary<string, List<string>> allImagePathsMap;
         private List<string> horoscopes;
-        private Dictionary<string, string> horoscopeStateMap;
         private Random random;
-        public readonly string[] zodiacSigns;
+        // key -> zodiac sign, List<string> -> list of all horoscopes (shuffled)
+        private Dictionary<string, List<string>> horoscopeStateMap;
+        private DateTime horoscopeCreationDate;
+
         public HoroscopeGenerator() 
         {
-            zodiacSigns = ["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"];
+            // Ensure the directory exists
+            if (!Directory.Exists(volumePath))
+            {
+                Directory.CreateDirectory(volumePath);
+            }
             random = new();
             horoscopes = [];
             horoscopeStateMap = [];
-            pathToImageForToday = "";
+            allImagePathsMap = [];
 
-            List<string> allImages = Directory.EnumerateFiles("wwwroot/images").ToList();
-            string rawPath = allImages[random.Next(0, allImages.Count)];
-            rawPath = rawPath.Substring(rawPath.IndexOf('/'));
-            pathToImageForToday = rawPath.Replace('\\', '/');
+            foreach (string sign in zodiacSigns)
+            {
+                allImagePathsMap[sign] = Directory.EnumerateFiles("wwwroot/images").ToList();
+                allImagePathsMap[sign].Shuffle();
+            }
 
             if (!File.Exists(pathToHoroscopes))
             {
@@ -49,13 +59,7 @@ namespace saheart_server
             }
             else
             {
-                DateTime creationTime = File.GetCreationTimeUtc(pathToStateFile);
-                // reset the horoscopes each new day
-                if ((creationTime - DateTime.UtcNow).TotalDays >= 1)
-                {
-                    InitStateDict();
-                    return;
-                }
+                horoscopeCreationDate = File.GetCreationTime(pathToStateFile).Date;
                 using (StreamReader sr = new(pathToStateFile))
                 {
                     string? line = sr.ReadLine();
@@ -66,7 +70,7 @@ namespace saheart_server
                     }
                     else
                     {
-                        horoscopeStateMap = JsonSerializer.Deserialize<Dictionary<string, string>>(line);
+                        horoscopeStateMap = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(line);
                         if (horoscopeStateMap == null)
                         {
                             Console.WriteLine("JSON deserialization failed, creating new one.");
@@ -79,10 +83,12 @@ namespace saheart_server
 
         private void InitStateDict()
         {
+            Console.WriteLine("Initializing new `horoscopeStateMap`");
             horoscopeStateMap = [];
             foreach (string sign in zodiacSigns)
             {
-                horoscopeStateMap[sign] = horoscopes[random.Next(0, horoscopes.Count)];
+                horoscopes.Shuffle();
+                horoscopeStateMap[sign] = (List<string>)horoscopes.Clone();
             }
             string json = JsonSerializer.Serialize(horoscopeStateMap);
             using (StreamWriter sw = new(pathToStateFile))
@@ -91,12 +97,14 @@ namespace saheart_server
             }
         }
 
-        public HoroscopeResponse Generate(string zodiacSign)
+        public HoroscopeResponse Generate(string zodiacSign, DateTime requestDate)
         {
             HoroscopeResponse response = new();
-
-            response.Text = horoscopeStateMap[zodiacSign];
-            response.PathToImage = pathToImageForToday;
+            response.Text = horoscopeStateMap[zodiacSign][(((int)Math.Abs((requestDate - horoscopeCreationDate).TotalDays)) % horoscopes.Count) / 3];
+            
+            string rawPath = allImagePathsMap[zodiacSign][(((int)Math.Abs((requestDate - horoscopeCreationDate).TotalDays)) % horoscopes.Count)];
+            rawPath = rawPath.Substring(rawPath.IndexOf('/'));
+            response.PathToImage = rawPath.Replace('\\', '/');
             return response;
         }
     }
