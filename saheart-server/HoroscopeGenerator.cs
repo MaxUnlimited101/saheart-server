@@ -32,7 +32,9 @@ namespace saheart_server
 
             foreach (string sign in zodiacSigns)
             {
-                allImagePathsMap[sign] = Directory.EnumerateFiles("wwwroot/images").ToList();
+                List<string> t = [];
+                t.Remove("_.txt"); // not an image, but needed for github repository
+                allImagePathsMap[sign] = t;
                 allImagePathsMap[sign].Shuffle();
             }
 
