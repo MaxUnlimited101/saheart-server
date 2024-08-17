@@ -9,6 +9,7 @@ namespace saheart_server
         private static readonly string volumePath = "/app/data"; // Path where the volume is mounted
         private static readonly string pathToStateFile = "/app/data/horoscopeStateMap.json";
         private static readonly string pathToHoroscopes = "./res/horoscope_text_full_ENG.txt";
+        private static readonly string pathToAllImages = "wwwroot/images";
         public static readonly string[] zodiacSigns = ["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"];
 
         private Dictionary<string, List<string>> allImagePathsMap;
@@ -32,7 +33,7 @@ namespace saheart_server
 
             foreach (string sign in zodiacSigns)
             {
-                List<string> t = [];
+                List<string> t = Directory.EnumerateFiles(pathToAllImages).ToList();
                 t.Remove("_.txt"); // not an image, but needed for github repository
                 allImagePathsMap[sign] = t;
                 allImagePathsMap[sign].Shuffle();
