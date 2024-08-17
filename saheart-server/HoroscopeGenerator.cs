@@ -11,6 +11,7 @@ namespace saheart_server
         private static readonly string pathToHoroscopes = "./res/horoscope_text_full_ENG.txt";
         private static readonly string pathToAllImages = "wwwroot/images";
         public static readonly string[] zodiacSigns = ["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"];
+        private const int daysTimeout = 1;
 
         private Dictionary<string, List<string>> allImagePathsMap;
         private List<string> horoscopes;
@@ -34,7 +35,7 @@ namespace saheart_server
             foreach (string sign in zodiacSigns)
             {
                 List<string> t = Directory.EnumerateFiles(pathToAllImages).ToList();
-                t.Remove("_.txt"); // not an image, but needed for github repository
+                t.Remove(Path.Combine(pathToAllImages, "_.txt")); // not an image, but needed for github repository
                 allImagePathsMap[sign] = t;
                 allImagePathsMap[sign].Shuffle();
             }
@@ -103,7 +104,7 @@ namespace saheart_server
         public HoroscopeResponse Generate(string zodiacSign, DateTime requestDate)
         {
             HoroscopeResponse response = new();
-            response.Text = horoscopeStateMap[zodiacSign][(((int)Math.Abs((requestDate - horoscopeCreationDate).TotalDays)) % horoscopes.Count) / 3];
+            response.Text = horoscopeStateMap[zodiacSign][(((int)Math.Abs((requestDate - horoscopeCreationDate).TotalDays)) % horoscopes.Count) / daysTimeout];
             
             string rawPath = allImagePathsMap[zodiacSign][(((int)Math.Abs((requestDate - horoscopeCreationDate).TotalDays)) % horoscopes.Count)];
             rawPath = rawPath.Substring(rawPath.IndexOf('/'));
