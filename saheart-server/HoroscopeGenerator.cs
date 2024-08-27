@@ -106,7 +106,7 @@ namespace saheart_server
             HoroscopeResponse response = new();
             response.Text = horoscopeStateMap[zodiacSign][(((int)Math.Abs((requestDate - horoscopeCreationDate).TotalDays)) % horoscopes.Count) / daysTimeout];
             
-            string rawPath = allImagePathsMap[zodiacSign][(((int)Math.Abs((requestDate - horoscopeCreationDate).TotalDays)) % horoscopes.Count)];
+            string rawPath = allImagePathsMap[zodiacSign][(((int)Math.Abs((requestDate - horoscopeCreationDate).TotalDays)) % allImagePathsMap[zodiacSign].Count)];
             rawPath = rawPath.Substring(rawPath.IndexOf('/'));
             response.PathToImage = rawPath.Replace('\\', '/');
             return response;

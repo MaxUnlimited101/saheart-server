@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Html;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace saheart_server
 {
@@ -11,7 +13,7 @@ namespace saheart_server
             // Add CORS services
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAll", builder =>
+                options.AddDefaultPolicy(builder =>
                 {
                     builder.AllowAnyOrigin()
                            .AllowAnyMethod()
@@ -23,7 +25,7 @@ namespace saheart_server
 
             app.UseStaticFiles();
 
-            app.UseCors("AllowAll");
+            app.UseCors();
 
             app.MapGet("/", async (HttpContext context) =>
             {
@@ -35,7 +37,7 @@ namespace saheart_server
 
             foreach (string sign in HoroscopeGenerator.zodiacSigns)
             {
-                app.MapGet($"/{sign}", (HttpContext context) => {
+                app.MapGet($"/{sign}", async (HttpContext context) => {
 
                     var date = context.Request.Query["date"];
                     DateTime reqestDate;
@@ -50,6 +52,7 @@ namespace saheart_server
 
                     context.Response.ContentType = "application/json";
                     HoroscopeResponse response = horoscopeGenerator.Generate($"{sign}", reqestDate);
+                    
                     return Results.Ok(response);
                 });
             }
