@@ -1,4 +1,5 @@
 ﻿using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -8,17 +9,29 @@ namespace saheart_server
     {
         private static readonly string volumePath = "/app/data"; // Path where the volume is mounted
         private static readonly string pathToStateFile = "/app/data/horoscopeStateMap.json";
-        private static readonly string pathToHoroscopes = "./res/horoscope_text_full_ENG.txt";
+        private static readonly string pathToAllHoroscopesFolder = "./res/";
         private static readonly string pathToAllImages = "wwwroot/images";
         public static readonly string[] zodiacSigns = ["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"];
+        public static List<string> allLanguages;
         private const int daysTimeout = 1;
 
         private Dictionary<string, List<string>> allImagePathsMap;
-        private List<string> horoscopes;
-        private Random random;
-        // key -> zodiac sign, List<string> -> list of all horoscopes (shuffled)
-        private Dictionary<string, List<string>> horoscopeStateMap;
+        /// <summary>
+        /// key - language code <br/>
+        /// 2nd key - horoscope 
+        /// </summary>
+        private Dictionary<string, Dictionary<string, List<string>>> horoscopeStateMap;
         private DateTime horoscopeCreationDate;
+
+        static HoroscopeGenerator()
+        {
+            if (!Directory.Exists(pathToAllHoroscopesFolder))
+            {
+                throw new FileNotFoundException("Horoscope files not found!");
+            }
+
+            allLanguages = Directory.EnumerateFiles(pathToAllHoroscopesFolder).Select(s => Path.GetFileName(s)).ToList();
+        }
 
         public HoroscopeGenerator() 
         {
@@ -27,8 +40,6 @@ namespace saheart_server
             {
                 Directory.CreateDirectory(volumePath);
             }
-            random = new();
-            horoscopes = [];
             horoscopeStateMap = [];
             allImagePathsMap = [];
 
@@ -38,23 +49,6 @@ namespace saheart_server
                 t.Remove(Path.Combine(pathToAllImages, "_.txt")); // not an image, but needed for github repository
                 allImagePathsMap[sign] = t;
                 allImagePathsMap[sign].Shuffle();
-            }
-
-            if (!File.Exists(pathToHoroscopes))
-            {
-                throw new FileNotFoundException("Horoscope file not found!");
-            }
-            using (StreamReader sr = new(pathToHoroscopes))
-            {
-                string? line;
-                do
-                {
-                    line = sr.ReadLine();
-                    if (line != null)
-                    {
-                        horoscopes.Add(line);
-                    }
-                } while (!string.IsNullOrEmpty(line));
             }
 
             if (!File.Exists(pathToStateFile))
@@ -74,7 +68,7 @@ namespace saheart_server
                     }
                     else
                     {
-                        horoscopeStateMap = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(line);
+                        horoscopeStateMap = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, List<string>>>>(line);
                         if (horoscopeStateMap == null)
                         {
                             Console.WriteLine("JSON deserialization failed, creating new one.");
@@ -89,10 +83,44 @@ namespace saheart_server
         {
             Console.WriteLine("Initializing new `horoscopeStateMap`");
             horoscopeStateMap = [];
-            foreach (string sign in zodiacSigns)
+
+            IEnumerable<string> horoscopeFiles = Directory.EnumerateFiles(pathToAllHoroscopesFolder);
+
+            Dictionary<string, List<string>> allHoroscopesByLanguage = [];
+
+            foreach (string file in horoscopeFiles)
             {
-                horoscopes.Shuffle();
-                horoscopeStateMap[sign] = (List<string>)horoscopes.Clone();
+                allHoroscopesByLanguage.Add(Path.GetFileName(file), []);
+            }
+
+            foreach (string file in horoscopeFiles)
+            {
+                using (StreamReader sr = new(file, System.Text.Encoding.UTF8))
+                {
+                    string? line;
+                    do
+                    {
+                        line = sr.ReadLine();
+                        if (line != null)
+                        {
+                            allHoroscopesByLanguage[Path.GetFileName(file)].Add(line);
+                        }
+                    } while (!string.IsNullOrEmpty(line));
+                }
+            }
+
+            foreach (string lang in allLanguages)
+            {
+                horoscopeStateMap[lang] = [];
+            }
+
+            foreach (string lang in allLanguages)
+            {
+                foreach (string sign in zodiacSigns)
+                {
+                    allHoroscopesByLanguage[lang].Shuffle();
+                    horoscopeStateMap[lang][sign] = (List<string>)allHoroscopesByLanguage[lang].Clone();
+                }
             }
             string json = JsonSerializer.Serialize(horoscopeStateMap);
             using (StreamWriter sw = new(pathToStateFile))
@@ -101,10 +129,10 @@ namespace saheart_server
             }
         }
 
-        public HoroscopeResponse Generate(string zodiacSign, DateTime requestDate)
+        public HoroscopeResponse Generate(string zodiacSign, DateTime requestDate, string lang)
         {
             HoroscopeResponse response = new();
-            response.Text = horoscopeStateMap[zodiacSign][(((int)Math.Abs((requestDate - horoscopeCreationDate).TotalDays)) % horoscopes.Count) / daysTimeout];
+            response.Text = horoscopeStateMap[lang][zodiacSign][(((int)Math.Abs((requestDate - horoscopeCreationDate).TotalDays)) % horoscopeStateMap[lang][zodiacSign].Count) / daysTimeout];
             
             string rawPath = allImagePathsMap[zodiacSign][(((int)Math.Abs((requestDate - horoscopeCreationDate).TotalDays)) % allImagePathsMap[zodiacSign].Count)];
             rawPath = rawPath.Substring(rawPath.IndexOf('/'));
