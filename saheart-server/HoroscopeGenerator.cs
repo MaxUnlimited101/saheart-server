@@ -57,6 +57,7 @@ namespace saheart_server
             }
             else
             {
+                Console.WriteLine("Reading old State file.");
                 horoscopeCreationDate = File.GetCreationTime(pathToStateFile).Date;
                 using (StreamReader sr = new(pathToStateFile))
                 {
@@ -114,14 +115,18 @@ namespace saheart_server
                 horoscopeStateMap[lang] = [];
             }
 
-            foreach (string lang in allLanguages)
+            foreach (string sign in zodiacSigns)
             {
-                foreach (string sign in zodiacSigns)
+                int seed = (int)Math.Abs(DateTime.Now.Ticks % int.MaxValue);
+                foreach (string lang in allLanguages)
                 {
+                    IListExtender.rng = new Random(seed);
                     allHoroscopesByLanguage[lang].Shuffle();
                     horoscopeStateMap[lang][sign] = (List<string>)allHoroscopesByLanguage[lang].Clone();
                 }
             }
+            FixHoroscopeUniqueness();
+
             string json = JsonSerializer.Serialize(horoscopeStateMap);
             using (StreamWriter sw = new(pathToStateFile))
             {
@@ -138,6 +143,36 @@ namespace saheart_server
             rawPath = rawPath.Substring(rawPath.IndexOf('/'));
             response.PathToImage = rawPath.Replace('\\', '/');
             return response;
+        }
+
+        /// <summary>
+        /// Function to fix if two diferent horoscopes have the same prediction on the same day. 
+        /// I know it doesn't completely gurantee no collisions, but good enough
+        /// </summary>
+        private void FixHoroscopeUniqueness()
+        {
+            int horoscopeAmountPerLangPerSign = horoscopeStateMap["eng"]["cancer"].Count;
+            foreach (string sign in zodiacSigns)
+            {
+                foreach (string sign2 in zodiacSigns)
+                {
+                    if (sign != sign2)
+                    {
+                        for (int i = 0; i < horoscopeAmountPerLangPerSign; i++)
+                        {
+                            if (horoscopeStateMap["eng"][sign][i] == horoscopeStateMap["eng"][sign2][i])
+                            {
+                                Console.WriteLine($"{sign},{sign2}, {i}");
+                                foreach (string lan in allLanguages)
+                                {
+                                    (horoscopeStateMap[lan][sign2][i], horoscopeStateMap[lan][sign2][(i + 1) % horoscopeAmountPerLangPerSign]) =
+                                        (horoscopeStateMap[lan][sign2][(i + 1) % horoscopeAmountPerLangPerSign], horoscopeStateMap[lan][sign2][i]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

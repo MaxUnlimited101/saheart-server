@@ -3,8 +3,7 @@
     public static class IListExtender
     {
         // https://stackoverflow.com/questions/273313/randomize-a-listt
-        private static Random rng = new Random();
-
+        public static Random rng = new Random(0);
         public static void Shuffle<T>(this IList<T> list)
         {
             int n = list.Count;
